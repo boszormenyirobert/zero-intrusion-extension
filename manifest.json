@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Zero Intrusion Lock & Entcrypted Layers",
+  "version": "1.0",
+  "permissions": ["storage","tabs","activeTab","sidePanel", "scripting"],
+  "background": {
+  "service_worker": "background.js"
+},
+"action": {
+  "default_title": "Zero Intrusion Lock",
+      "default_icon": {
+      "128": "icon128.png"
+    }
+},
+  "icons": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+  },
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["js/main.js", "js/selectors.json","js/**/*.js","bridge.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

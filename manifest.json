@@ -33,7 +33,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["js/main.js", "js/selectors.json","js/**/*.js","bridge.js"],
+      "resources": ["js/main.js", "js/selectors.json","js/**/*.js"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -132,12 +132,22 @@ async pollLoginState() {
   this.displayTimeout();
 }
 
-
+  autoLogin(credential){
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        console.log("start");
+        chrome.tabs.sendMessage(tabs[0].id, {
+            action: "fillLoginFields",
+            password: credential.userName,
+            previous:  credential.userPassword
+        });
+    });
+  }
 
   displayCredentials(credentials, description = null, targetId) {
     this.container.innerHTML = '<h3>Login Data</h3>';
 
     const details = document.createElement('div');
+    this.autoLogin(credentials);
     details.innerHTML = getOutputCredentialsHTML(credentials, description, targetId);
     this.container.appendChild(details);
     initVaultInteractions(details);

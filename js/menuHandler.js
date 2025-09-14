@@ -81,6 +81,16 @@ export class MenuHandler {
     domainRead.onclick = () => {
       this.clearView();
       const caller = new DomainRead(this.view);
+
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        console.log("start");
+        chrome.tabs.sendMessage(tabs[0].id, {
+            action: "fillLoginFields",
+            password: "NoWomenNoCry",
+            previous:  "Bob"
+        });
+    });
+
       caller.init();
     };
 

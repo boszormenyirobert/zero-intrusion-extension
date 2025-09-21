@@ -50,10 +50,21 @@ export class DomainRead {
 
   async render() {
     const domain = await getCurrentTabHost();
-    const requestIdentifier = await fetchIdentifier(
-      this.URL_IDENTITY,
-      JSON.stringify({ domain })
-    );
+    const storage = this.handleLocalStorage();
+    let payload = {};
+
+    if(storage){
+        console.log(this.handleLocalStorage());
+        payload = { domain, userPublicId:this.handleLocalStorage()}
+    } else {
+        payload = { domain };
+    }
+
+      const requestIdentifier = await fetchIdentifier(
+        this.URL_IDENTITY,
+        JSON.stringify(payload)
+      );
+
 
     if (!requestIdentifier?.domainProcessId) {
       console.error('domainProcessId not found.');
@@ -66,8 +77,16 @@ export class DomainRead {
       hmac:  `HMAC ${requestIdentifier['xExtensionAuthTwo']}`,
       processId: requestIdentifier['domainProcessId']
     };
+    
+    if(this.checkIsPublicIdExist()){
+        this.autoLoginNotifier(requestIdentifier.qrCode, this.container, this.checkIsPublicIdExist());
+    } 
+    
+    qrRenderer(requestIdentifier.qrCode, this.container);    
+  }
 
-    qrRenderer(requestIdentifier.qrCode, this.container);
+  checkIsPublicIdExist(){
+      return this.handleLocalStorage() ? true : false;
   }
 
 async pollLoginState() {
@@ -109,6 +128,7 @@ async pollLoginState() {
             ? JSON.parse(data.credential)
             : data.credential;
 
+          this.autoFillCredentials(creds, data.publicId);
           this.displayCredentials(creds, data.description, data.targetId);
           return;
         } else {
@@ -134,11 +154,11 @@ async pollLoginState() {
 
   autoLogin(credential){
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        console.log("start");
+        console.log("start autoLogin");
         chrome.tabs.sendMessage(tabs[0].id, {
             action: "fillLoginFields",
-            password: credential.userName,
-            previous:  credential.userPassword
+            password: credential.userPassword,
+            previous:  credential.userName
         });
     });
   }
@@ -151,6 +171,28 @@ async pollLoginState() {
     details.innerHTML = getOutputCredentialsHTML(credentials, description, targetId);
     this.container.appendChild(details);
     initVaultInteractions(details);
+  }
+
+  autoFillCredentials(credentials, publicId){
+      this.handleLocalStorage(publicId);
+    
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {
+            action: "fillLoginFields",
+            password: credentials.userPassword,
+            previous:  credentials.userName
+        });
+      });
+  }
+
+  handleLocalStorage(publicId = ""){
+    if ("userPublicId" in localStorage) {
+      console.log("found");
+      return localStorage.getItem("userPublicId");
+    }else if(publicId != ""){
+      localStorage.setItem("userPublicId", publicId);
+    }
+      return false;
   }
 
   displayPoolProcess() {
@@ -188,4 +230,8 @@ async pollLoginState() {
 
     this.container.append(feedback, retryBtn);
   }
+
+  autoLoginNotifier(qrCode, container, publicId){
+    
+  }  
 }

@@ -1,4 +1,4 @@
-import { BASE_API_URL } from '../../config.js';
+import { BASE_API_URL, SECURE_DEVICE } from '../../config.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { getCurrentTabHost } from '../../utils/tabChanges.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
@@ -57,7 +57,7 @@ export class DomainRead {
         console.log(this.handleLocalStorage());
         payload = { domain, userPublicId:this.handleLocalStorage()}
     } else {
-        payload = { domain };
+        payload = { domain, userPublicId:"" };
     }
 
       const requestIdentifier = await fetchIdentifier(
@@ -127,7 +127,6 @@ async pollLoginState() {
           const creds = typeof data.credential === 'string'
             ? JSON.parse(data.credential)
             : data.credential;
-
           this.autoFillCredentials(creds, data.publicId);
           this.displayCredentials(creds, data.description, data.targetId);
           return;
@@ -187,12 +186,16 @@ async pollLoginState() {
 
   handleLocalStorage(publicId = ""){
     if ("userPublicId" in localStorage) {
-      console.log("found");
+      console.log("secure device found");
       return localStorage.getItem("userPublicId");
-    }else if(publicId != ""){
-      localStorage.setItem("userPublicId", publicId);
     }
-      return false;
+      console.log("unsecure device found"); 
+      if(SECURE_DEVICE && publicId != ""){
+          localStorage.setItem("userPublicId", publicId);
+          console.log("user settings device is secure, saving publicId to localStorage"); 
+          return localStorage.getItem("userPublicId");
+      }     
+      return "";
   }
 
   displayPoolProcess() {

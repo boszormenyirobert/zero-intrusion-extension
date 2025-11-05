@@ -2,6 +2,7 @@ import { BASE_API_URL, SECURE_DEVICE } from '../../config.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { getCurrentTabHost } from '../../utils/tabChanges.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
+import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { initVaultInteractions } from './initVaultInteractions.js';
 import { getOutputCredentialsHTML } from '../../vault/login/getOutputCredentialsHTML.js';
 import { renderPollingProcess } from './../../rendering/renderPollingProcess.js';
@@ -50,12 +51,12 @@ export class DomainRead {
 
   async render() {
     const domain = await getCurrentTabHost();
-    const storage = this.handleLocalStorage();
+    const storage = handleLocalStorage();
     let payload = {};
 
     if(storage){
-        console.log(this.handleLocalStorage());
-        payload = { domain, userPublicId:this.handleLocalStorage()}
+        console.log(handleLocalStorage());
+        payload = { domain, userPublicId:handleLocalStorage()}
     } else {
         payload = { domain, userPublicId:"" };
     }
@@ -86,7 +87,7 @@ export class DomainRead {
   }
 
   checkIsPublicIdExist(){
-      return this.handleLocalStorage() ? true : false;
+      return handleLocalStorage() ? true : false;
   }
 
 async pollLoginState() {
@@ -173,7 +174,7 @@ async pollLoginState() {
   }
 
   autoFillCredentials(credentials, publicId){
-      this.handleLocalStorage(publicId);
+      handleLocalStorage(publicId);
     
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, {
@@ -182,20 +183,6 @@ async pollLoginState() {
             previous:  credentials.userName
         });
       });
-  }
-
-  handleLocalStorage(publicId = ""){
-    if ("userPublicId" in localStorage) {
-      console.log("secure device found");
-      return localStorage.getItem("userPublicId");
-    }
-      console.log("unsecure device found"); 
-      if(SECURE_DEVICE && publicId != ""){
-          localStorage.setItem("userPublicId", publicId);
-          console.log("user settings device is secure, saving publicId to localStorage"); 
-          return localStorage.getItem("userPublicId");
-      }     
-      return "";
   }
 
   displayPoolProcess() {

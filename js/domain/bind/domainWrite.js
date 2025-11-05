@@ -4,6 +4,7 @@ import { getCurrentTabHost } from '../../utils/tabChanges.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
 import { pollRegistrationState } from './../../utils/pollRegistration.js';
 import { renderInputFieldsDomain } from '../../rendering/renderInputFieldsDomain.js';
+import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 
 export class DomainWrite {
   static activeController = null;
@@ -83,6 +84,7 @@ export class DomainWrite {
     const password = this.container.querySelector('#password').value.trim();
     const description = this.container.querySelector('#description').value.trim();
     const isUpdate = this.container.querySelector('input[type="checkbox"]').checked;
+    const storage = handleLocalStorage() ?? "";
 
     return JSON.stringify({
       domain,
@@ -91,7 +93,8 @@ export class DomainWrite {
       description: description,
       type: 'registration-domain',
       source: 'extension',
-      isNew: isUpdate ? 'update' : 'new'
+      isNew: isUpdate ? 'update' : 'new',
+      userPublicId: storage
     });
   }
 

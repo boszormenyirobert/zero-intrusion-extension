@@ -106,6 +106,12 @@ async pollLoginState() {
   console.log(this.state);
 
   for (let attempt = 0; attempt < maxTries; attempt++) {
+    // Check if polling was aborted before each attempt
+    if (signal.aborted) {
+      console.warn('Polling was aborted, stopping loop');
+      return;
+    }
+
     try {
       const res = await fetch(this.URL_POLL, {
         method: 'POST',
@@ -123,16 +129,43 @@ async pollLoginState() {
       });
 
       const data = await res.json();
-      if (data.success) {        
-        if (data.success && data.process_check) {
-          const creds = typeof data.credential === 'string'
-            ? JSON.parse(data.credential)
-            : data.credential;
-          this.autoFillCredentials(creds, data.publicId);
-          this.displayCredentials(creds, data.description, data.targetId);
+      if (data.success) {   
+        const availableCredentials = [];
+        
+        // Collect all valid credentials
+        Object.keys(data).forEach((key) => {
+            if (!isNaN(key)) { // Only process numbered keys (0, 1, 2, etc.)
+              const item = data[key];
+              if(item.process_check) {
+                const creds = typeof item.credential === 'string'
+                  ? JSON.parse(item.credential)
+                  : item.credential;
+                availableCredentials.push({
+                  key: key,
+                  item: item,
+                  creds: creds
+                });
+              }
+            }
+        });
+
+        if (availableCredentials.length === 0) {
+          this.displayPoolProcess();
+        } else if (availableCredentials.length === 1) {
+          // Single credential - auto-fill directly
+          const { creds, item } = availableCredentials[0];
+          console.log('Single credential found:', creds);
+          this.autoFillCredentials(creds, item.publicId);
+          this.displayCredentials(creds, item.description, item.targetId);
+          // Stop polling completely
+          this.stopPolling();
           return;
         } else {
-          this.displayPoolProcess();
+          // Multiple credentials - show dropdown
+          this.displayCredentialsDropdown(availableCredentials);
+          // Stop polling completely
+          this.stopPolling();
+          return;
         }
       } else {
         console.warn('Polling returned non-ok response:', res.status);
@@ -145,21 +178,63 @@ async pollLoginState() {
       console.error('Polling error:', e);
     }
 
-    // Fix 1 másodperces várakozás minden iteráció végén
+    // Check again before waiting to avoid unnecessary delay
+    if (signal.aborted) {
+      console.warn('Polling was aborted during iteration, stopping');
+      return;
+    }
+
+    // Wait before next attempt
     await new Promise(res => setTimeout(res, interval));
   }
 
   this.displayTimeout();
+  this.stopPolling();
 }
+
+  stopPolling() {
+    if (this.pollController) {
+      this.pollController.abort();
+      this.pollController = null;
+    }
+    if (DomainRead.activeController === this.pollController) {
+      DomainRead.activeController = null;
+    }
+    console.log('Polling stopped');
+  }
 
   autoLogin(credential){
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         console.log("start autoLogin");
-        chrome.tabs.sendMessage(tabs[0].id, {
-            action: "fillLoginFields",
-            password: credential.userPassword,
-            previous:  credential.userName
-        });
+        if (tabs && tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+              action: "fillLoginFields",
+              password: credential.userPassword,
+              previous:  credential.userName
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.error("Error sending message to content script:", chrome.runtime.lastError.message);
+              // Try to inject content script if it's not available
+              chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                files: ['content.js']
+              }).then(() => {
+                // Retry sending message after injection
+                chrome.tabs.sendMessage(tabs[0].id, {
+                  action: "fillLoginFields",
+                  password: credential.userPassword,
+                  previous: credential.userName
+                });
+              }).catch(err => {
+                console.error("Failed to inject content script:", err);
+              });
+            } else {
+              console.log("Message sent successfully:", response);
+            }
+          });
+        } else {
+          console.error("No active tab found");
+        }
     });
   }
 
@@ -173,15 +248,78 @@ async pollLoginState() {
     initVaultInteractions(details);
   }
 
+  displayCredentialsDropdown(availableCredentials) {
+    this.container.innerHTML = '<h3>Multiple Accounts Found</h3>';
+
+    const dropdown = document.createElement('select');
+    dropdown.style.width = '100%';
+    dropdown.style.padding = '8px';
+    dropdown.style.marginBottom = '10px';
+    dropdown.style.fontSize = '14px';
+
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Select an account...';
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    dropdown.appendChild(defaultOption);
+
+    // Add options for each credential
+    availableCredentials.forEach((credentialData, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = `${credentialData.creds.userName} - ${credentialData.item.description}`;
+      dropdown.appendChild(option);
+    });
+
+    // Add event listener for selection
+    dropdown.addEventListener('change', (event) => {
+      const selectedIndex = parseInt(event.target.value);
+      if (selectedIndex >= 0) {
+        const selected = availableCredentials[selectedIndex];
+        console.log('Selected credential:', selected.creds);
+        this.autoFillCredentials(selected.creds, selected.item.publicId);
+        this.displayCredentials(selected.creds, selected.item.description, selected.item.targetId);
+      }
+    });
+
+    this.container.appendChild(dropdown);
+  }
+
   autoFillCredentials(credentials, publicId){
       handleLocalStorage(publicId);
     
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {
-            action: "fillLoginFields",
-            password: credentials.userPassword,
-            previous:  credentials.userName
-        });
+        if (tabs && tabs[0]) {
+          chrome.tabs.sendMessage(tabs[0].id, {
+              action: "fillLoginFields",
+              password: credentials.userPassword,
+              previous:  credentials.userName
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.error("Error sending message to content script:", chrome.runtime.lastError.message);
+              // Try to inject content script if it's not available
+              chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                files: ['content.js']
+              }).then(() => {
+                // Retry sending message after injection
+                chrome.tabs.sendMessage(tabs[0].id, {
+                  action: "fillLoginFields",
+                  password: credentials.userPassword,
+                  previous: credentials.userName
+                });
+              }).catch(err => {
+                console.error("Failed to inject content script:", err);
+              });
+            } else {
+              console.log("AutoFill message sent successfully:", response);
+            }
+          });
+        } else {
+          console.error("No active tab found for autofill");
+        }
       });
   }
 

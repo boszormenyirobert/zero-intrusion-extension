@@ -1,4 +1,5 @@
 import { BASE_API_URL } from '../../config.js';
+import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { getCurrentTabHost } from '../../utils/tabChanges.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
@@ -49,7 +50,8 @@ export class VaultRead {
   }
 
   async renderApplicationList() {
-    const payload = JSON.stringify({ type: 'applications', source: 'extension' });
+    const storage = handleLocalStorage();
+    const payload = JSON.stringify({ type: 'applications', source: 'extension', userPublicId: storage });
     const requestIdentifier = await fetchIdentifier(this.URL_IDENTITY, payload);
 
     qrRenderer(requestIdentifier.qrCode, this.container);

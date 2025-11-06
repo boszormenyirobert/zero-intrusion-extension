@@ -1,4 +1,5 @@
 import { BASE_API_URL } from '../../config.js';
+import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { getCurrentTabHost } from '../../utils/tabChanges.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
@@ -77,6 +78,8 @@ export class VaultWrite {
   }
 
   async getVaultRegistrationPayload() {
+    const storage = handleLocalStorage();
+
     return JSON.stringify({
       application: document.getElementById('application_name').value.trim(),
       description: document.getElementById('application_description').value.trim(),
@@ -84,7 +87,8 @@ export class VaultWrite {
       userPassword: document.getElementById('application_password').value.trim(),
       type: "registration-application",
       source: "extension",
-      isNew: "new"
+      isNew: "new",
+      userPublicId: storage
     });
   }
 

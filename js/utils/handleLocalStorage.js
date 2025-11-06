@@ -1,3 +1,5 @@
+  import { SECURE_DEVICE } from './../config.js';
+
   export function handleLocalStorage(publicId = ""){
     if ("userPublicId" in localStorage) {
       console.log("secure device found");

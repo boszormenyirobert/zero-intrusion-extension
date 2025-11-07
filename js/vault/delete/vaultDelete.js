@@ -1,5 +1,6 @@
 import { VaultRead } from '../login/vaultRead.js';
 import { BASE_API_URL } from '../../config.js';
+import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
 import { pollRegistrationState } from './../../utils/pollRegistration.js';
@@ -65,7 +66,14 @@ export class VaultDelete {
     }
 
     async generateDeleteQrConfirmation(targetId){
-        const payload = JSON.stringify({ type: 'delete-applications', source: 'extension', targetId: targetId });
+        const storage = handleLocalStorage();
+
+        const payload = JSON.stringify({ 
+          type: 'delete-applications', 
+          source: 'extension', 
+          targetId: targetId, 
+          userPublicId: storage 
+        });
         const requestIdentifier = await fetchIdentifier(this.URL_IDENTITY, payload);
 
         qrRenderer(requestIdentifier.qrCode, this.container);

@@ -1,5 +1,6 @@
 import { VaultRead } from '../login/vaultRead.js';
 import { BASE_API_URL } from '../../config.js';
+import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
 import { pollRegistrationState } from '../../utils/pollRegistration.js';
@@ -126,6 +127,8 @@ renderDropdown(appList) {
 
 
     async generateEditQrConfirmation(){
+        const storage = handleLocalStorage();
+
         const payload = JSON.stringify({ 
             type: 'update-applications', 
             source: 'extension', 
@@ -133,7 +136,8 @@ renderDropdown(appList) {
             userName:this.data.userName,
             userPassword:this.data.userPassword,
             description:this.data.description,
-            targetId:this.data.targetId        
+            targetId:this.data.targetId,
+            userPublicId: storage
         });
         const requestIdentifier = await fetchIdentifier(this.URL_IDENTITY, payload);
 

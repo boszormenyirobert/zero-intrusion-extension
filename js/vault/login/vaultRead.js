@@ -51,8 +51,17 @@ export class VaultRead {
 
   async renderApplicationList() {
     const storage = handleLocalStorage();
-    const payload = JSON.stringify({ type: 'applications', source: 'extension', userPublicId: storage });
-    const requestIdentifier = await fetchIdentifier(this.URL_IDENTITY, payload);
+    let payload = { type: 'applications', source: 'extension' };
+    
+    // Only add userPublicId if it exists and is not empty
+    if (storage && storage.trim() !== "") {
+      console.log("Adding userPublicId to vault payload:", storage);
+      payload.userPublicId = storage;
+    } else {
+      console.log("No valid userPublicId found for vault, sending payload without it");
+    }
+
+    const requestIdentifier = await fetchIdentifier(this.URL_IDENTITY, JSON.stringify(payload));
 
     qrRenderer(requestIdentifier.qrCode, this.container);
 
@@ -74,17 +83,15 @@ async pollGetApplicationList(requestIdentifier) {
   VaultRead.activeController = this.pollController;
   const signal = this.pollController.signal;
 
-  const maxWait = 15000;
   const interval = 1800;
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWait) {
+  const maxTries = 8;
+  
+  for (let attempt = 0; attempt < maxTries; attempt++) {
+    // Check if polling was aborted before each attempt
     if (signal.aborted) {
-      console.warn('Polling aborted');
+      console.warn('Polling was aborted, stopping loop');
       return;
     }
-
-    const iterationStart = Date.now();
 
     try {
       const res = await fetch(this.URL_POLL, {
@@ -108,24 +115,48 @@ async pollGetApplicationList(requestIdentifier) {
             this.renderApplications(data.applicationList);
           }
           this.state.applicationList = data.applicationList;
+          // Stop polling completely
+          this.stopPolling();
           return data.applicationList;
         } else {
           this.displayPoolProcess('vault');
         }
+      } else {
+        console.warn('Polling returned non-ok response:', res.status);
       }
     } catch (e) {
+      if (e.name === 'AbortError') {
+        console.warn('Polling aborted');
+        return;
+      }
       console.error('Polling error:', e);
     }
 
-    const elapsed = Date.now() - iterationStart;
-    const delay = Math.max(0, interval - elapsed);
-    await new Promise(resolve => setTimeout(resolve, delay));
+    // Check again before waiting to avoid unnecessary delay
+    if (signal.aborted) {
+      console.warn('Polling was aborted during iteration, stopping');
+      return;
+    }
+
+    // Wait before next attempt
+    await new Promise(resolve => setTimeout(resolve, interval));
   }
 
   console.warn('Polling timed out - no credentials received. New QR generated');
   this.displayTimeout();
+  this.stopPolling();
 }
 
+  stopPolling() {
+    if (this.pollController) {
+      this.pollController.abort();
+      this.pollController = null;
+    }
+    if (VaultRead.activeController === this.pollController) {
+      VaultRead.activeController = null;
+    }
+    console.log('Vault polling stopped');
+  }
 
   renderApplications(appList) {
     this.container.innerHTML = '';
@@ -222,6 +253,8 @@ async pollGetApplicationList(requestIdentifier) {
     const details = document.createElement('div');
     details.className = 'web-credentials';
     details.innerHTML = getOutputCredentialsHTML(credentials, description);
+    
+    eyeAndCopy(details);
 
     return details;
   }

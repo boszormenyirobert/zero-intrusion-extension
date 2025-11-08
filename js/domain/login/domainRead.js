@@ -132,22 +132,27 @@ async pollLoginState() {
       if (data.success) {   
         const availableCredentials = [];
         
-        // Collect all valid credentials
-        Object.keys(data).forEach((key) => {
-            if (!isNaN(key)) { // Only process numbered keys (0, 1, 2, etc.)
-              const item = data[key];
-              if(item.process_check) {
-                const creds = typeof item.credential === 'string'
-                  ? JSON.parse(item.credential)
-                  : item.credential;
-                availableCredentials.push({
-                  key: key,
-                  item: item,
-                  creds: creds
-                });
-              }
+        // Handle new response format with domainList array
+        if (data.domainList && Array.isArray(data.domainList)) {
+          data.domainList.forEach((item, index) => {
+            if (data.process_check) { // Check process_check at root level
+              const creds = typeof item.credential === 'string'
+                ? JSON.parse(item.credential)
+                : item.credential;
+              availableCredentials.push({
+                key: index.toString(),
+                item: {
+                  credential: item.credential,
+                  description: item.description,
+                  targetId: item.targetId,
+                  publicId: data.publicId || null, // publicId might be at root level
+                  process_check: data.process_check
+                },
+                creds: creds
+              });
             }
-        });
+          });
+        }
 
         if (availableCredentials.length === 0) {
           this.displayPoolProcess();

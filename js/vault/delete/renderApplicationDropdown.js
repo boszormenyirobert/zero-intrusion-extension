@@ -1,7 +1,7 @@
 /**
- * Renders application dropdown for vault delete
+ * Renders application dropdown for vault delete (internal version)
  */
-export function renderApplicationDropdown(container, appList, onDeleteCallback) {
+export function renderDropdown(container, appList, onDeleteCallback) {
     container.innerHTML = '';
     
     const title = document.createElement('h3');

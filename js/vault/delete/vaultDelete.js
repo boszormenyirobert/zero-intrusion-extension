@@ -4,6 +4,7 @@ import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
 import { pollRegistrationState } from './../../utils/pollRegistration.js';
+import { renderDropdown } from './renderApplicationDropdown.js';
 
 export class VaultDelete {
 
@@ -27,7 +28,9 @@ export class VaultDelete {
         await vaultInstance.init();
         const apps = await vaultInstance.getApplicationList();
         if (apps && apps.length > 0) {
-            this.renderDropdown(apps);
+            renderDropdown(this.container, apps, (targetId) => {
+                this.generateDeleteQrConfirmation(targetId);
+            });
         } else {
             this.displayNoCredentials();
         }

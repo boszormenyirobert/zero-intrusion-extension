@@ -111,6 +111,13 @@ async pollGetApplicationList(requestIdentifier) {
       if (res.ok) {
         const data = await res.json();
         if (data.applicationList) {
+          // Check if applicationList is empty
+          if (data.applicationList.length === 0) {
+            this.displayEmptyVault();
+            this.stopPolling();
+            return [];
+          }
+          
           if(this.mode === 'list'){
             this.renderApplications(data.applicationList);
           }
@@ -317,6 +324,38 @@ async pollGetApplicationList(requestIdentifier) {
     }
   }
   
+  displayEmptyVault() {
+    this.container.innerHTML = '';
+
+    const title = document.createElement('h3');
+    title.textContent = 'No Applications Found';
+    title.style.color = '#fff';
+    title.style.marginBottom = '15px';
+
+    const msg = document.createElement('p');
+    msg.textContent = 'Your vault is empty. No applications have been saved yet.';
+    msg.style.color = '#ffc107';
+    msg.style.marginBottom = '15px';
+
+    const retryBtn = document.createElement('button');
+    retryBtn.textContent = 'Refresh';
+    retryBtn.style.padding = '8px 16px';
+    retryBtn.style.backgroundColor = '#007bff';
+    retryBtn.style.color = 'white';
+    retryBtn.style.border = 'none';
+    retryBtn.style.borderRadius = '4px';
+    retryBtn.style.cursor = 'pointer';
+    retryBtn.style.marginRight = '10px';
+
+    retryBtn.addEventListener('click', () => {
+      this.container.innerHTML = '';
+      const caller = new VaultRead(this.container, this.mode);
+      caller.init();
+    });
+
+    this.container.append(title, msg, retryBtn);
+  }
+
   displayTimeout() {
       this.container.innerHTML = '';
   

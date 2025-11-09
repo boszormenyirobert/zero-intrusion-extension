@@ -5,6 +5,7 @@ import { qrRenderer } from '../../utils/renderQR.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
 import { pollRegistrationState } from './../../utils/pollRegistration.js';
 import { getCurrentTabHost } from '../../utils/tabChanges.js';
+import { DomainShared } from '../shared/domainShared.js';
 
 export class DomainDelete {
 
@@ -30,51 +31,23 @@ export class DomainDelete {
   }
 
   async loadDomainCredentials() {
-    const domain = await getCurrentTabHost();
-    const storage = handleLocalStorage();
-    let payload = {};
-
-    // Use EXACT same logic as domainRead.js
-    if(storage){
-        console.log(handleLocalStorage());
-        payload = { domain, userPublicId:handleLocalStorage()}
-    } else {
-        payload = { domain, userPublicId:"" };
-    }
-
     try {
-      const requestIdentifier = await fetchIdentifier(
-        `${BASE_API_URL}/api/credential-hub/domain/read/qr-identity`,
-        JSON.stringify(payload)
+      // Use shared initialization logic
+      this.state = await DomainShared.initializeDomainRequest();
+
+      // Display QR code using shared utility
+      DomainShared.displayQRCode(
+        this.state.requestIdentifier.qrCode, 
+        this.container, 
+        'Loading Domain Credentials...'
       );
 
-      if (!requestIdentifier?.domainProcessId) {
-        console.error('domainProcessId not found.');
-        this.displayError();
-        return;
-      }
-
-      // Set up state exactly like domainRead.js
-      this.state = {
-        domain,
-        requestIdentifier,
-        hmac:  `HMAC ${requestIdentifier['xExtensionAuthTwo']}`,
-        processId: requestIdentifier['domainProcessId']
-      };
-
-      // Show QR code first like domainRead does
-      this.container.innerHTML = '';
-      const title = document.createElement('h3');
-      title.textContent = 'Loading Domain Credentials...';
-      title.style.color = '#fff';
-      title.style.marginBottom = '15px';
-      this.container.appendChild(title);
-      
-      // Render QR code for authentication like domainRead
-      qrRenderer(requestIdentifier.qrCode, this.container);
-
-      // Poll for credentials using domainRead logic
-      const credentials = await this.pollForCredentials();
+      // Poll for credentials using shared logic
+      const credentials = await DomainShared.pollForCredentials(
+        this.state,
+        null, // no abort signal
+        () => this.displayPoolProcess()
+      );
       
       if (credentials && credentials.length > 0) {
         this.renderCredentialsDropdown(credentials);
@@ -85,97 +58,6 @@ export class DomainDelete {
       console.error('Error loading domain credentials:', error);
       this.displayError();
     }
-  }
-
-  async pollForCredentials() {
-    const URL_POLL = `${BASE_API_URL}/api/credential-hub/domain/read/state`;
-    const interval = 1800;
-    const maxTries = 8;
-    const { domain, requestIdentifier, hmac } = this.state;
-
-    console.log('Delete polling state:', this.state);
-
-    for (let attempt = 0; attempt < maxTries; attempt++) {
-      try {
-        const res = await fetch(URL_POLL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Extension-Auth': this.state['hmac']
-          },
-          body: JSON.stringify({
-            domain: this.state['domain'],
-            processId: this.state['processId'],
-            iv: requestIdentifier.iv,
-            type: 'extension'
-          })
-        });
-
-        const data = await res.json();
-        console.log('Delete polling response:', data);
-        
-        if (data.success) {   
-          const availableCredentials = [];
-          
-          // Handle new response format with domainList array (EXACT same logic as domainRead)
-          if (data.domainList && Array.isArray(data.domainList)) {
-            data.domainList.forEach((item, index) => {
-              if (data.process_check) { // Check process_check at root level
-                const creds = typeof item.credential === 'string'
-                  ? JSON.parse(item.credential)
-                  : item.credential;
-                availableCredentials.push({
-                  key: index.toString(),
-                  item: {
-                    credential: item.credential,
-                    description: item.description,
-                    targetId: item.targetId,
-                    publicId: data.publicId || null, // publicId might be at root level
-                    process_check: data.process_check
-                  },
-                  creds: creds
-                });
-              }
-            });
-          } else {
-            // Fallback to old format with numbered keys (EXACT same logic as domainRead)
-            Object.keys(data).forEach((key) => {
-                if (!isNaN(key)) { 
-                  const item = data[key];
-                  if(item.process_check) {
-                    const creds = typeof item.credential === 'string'
-                      ? JSON.parse(item.credential)
-                      : item.credential;
-                    availableCredentials.push({
-                      key: key,
-                      item: item,
-                      creds: creds
-                    });
-                  }
-                }
-            });
-          }
-
-          // EXACT same logic as domainRead - if credentials found, return them
-          if (availableCredentials.length > 0) {
-            return availableCredentials;
-          } else {
-            // If no credentials, show polling process and CONTINUE looping (don't return)
-            this.displayPoolProcess();
-          }
-        } else {
-          console.log('No success in response, continuing polling...');
-          this.displayPoolProcess();
-        }
-      } catch (e) {
-        console.error('Delete polling error:', e);
-      }
-
-      await new Promise(resolve => setTimeout(resolve, interval));
-    }
-    
-    console.warn('Delete polling timed out');
-    return null; // Timeout
   }
 
   renderCredentialsDropdown(credentials) {
@@ -369,7 +251,45 @@ export class DomainDelete {
   }
 
   displaySuccess(){
-    this.container.innerHTML = `<p>Domain with its credentials: 'removed'</p>`;   
+    this.container.innerHTML = '';
+    
+    const successIcon = document.createElement('div');
+    successIcon.textContent = '✅';
+    successIcon.style.fontSize = '48px';
+    successIcon.style.textAlign = 'center';
+    successIcon.style.marginBottom = '15px';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Credential Deleted Successfully';
+    title.style.color = '#28a745';
+    title.style.textAlign = 'center';
+    title.style.marginBottom = '15px';
+
+    const message = document.createElement('p');
+    message.textContent = 'The selected domain credential has been permanently removed from your vault.';
+    message.style.color = '#fff';
+    message.style.textAlign = 'center';
+    message.style.marginBottom = '20px';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Close';
+    closeBtn.style.padding = '10px 20px';
+    closeBtn.style.backgroundColor = '#007bff';
+    closeBtn.style.color = 'white';
+    closeBtn.style.border = 'none';
+    closeBtn.style.borderRadius = '4px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.display = 'block';
+    closeBtn.style.margin = '0 auto';
+
+    closeBtn.addEventListener('click', () => {
+      // Optionally restart the delete process or close the interface
+      this.container.innerHTML = '';
+      const caller = new DomainDelete(this.container);
+      caller.init();
+    });
+
+    this.container.append(successIcon, title, message, closeBtn);
   }
 
 }

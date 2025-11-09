@@ -6,6 +6,7 @@ import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { initVaultInteractions } from './initVaultInteractions.js';
 import { getOutputCredentialsHTML } from '../../vault/login/getOutputCredentialsHTML.js';
 import { renderPollingProcess } from './../../rendering/renderPollingProcess.js';
+import { DomainShared } from '../shared/domainShared.js';
 
 export class DomainRead {
   static activeController = null;
@@ -50,44 +51,22 @@ export class DomainRead {
   }
 
   async render() {
-    const domain = await getCurrentTabHost();
-    const storage = handleLocalStorage();
-    let payload = {};
-
-    if(storage){
-        console.log(handleLocalStorage());
-        payload = { domain, userPublicId:handleLocalStorage()}
-    } else {
-        payload = { domain, userPublicId:"" };
-    }
-
-      const requestIdentifier = await fetchIdentifier(
-        this.URL_IDENTITY,
-        JSON.stringify(payload)
-      );
-
-
-    if (!requestIdentifier?.domainProcessId) {
-      console.error('domainProcessId not found.');
+    try {
+      this.state = await DomainShared.initializeDomainRequest();
+      
+      if(this.checkIsPublicIdExist()){
+          this.autoLoginNotifier(this.state.requestIdentifier.qrCode, this.container, this.checkIsPublicIdExist());
+      } 
+      
+      qrRenderer(this.state.requestIdentifier.qrCode, this.container);
+    } catch (error) {
+      console.error('Error initializing domain request:', error);
       return;
     }
-
-    this.state = {
-      domain,
-      requestIdentifier,
-      hmac:  `HMAC ${requestIdentifier['xExtensionAuthTwo']}`,
-      processId: requestIdentifier['domainProcessId']
-    };
-    
-    if(this.checkIsPublicIdExist()){
-        this.autoLoginNotifier(requestIdentifier.qrCode, this.container, this.checkIsPublicIdExist());
-    } 
-    
-    qrRenderer(requestIdentifier.qrCode, this.container);    
   }
 
   checkIsPublicIdExist(){
-      return handleLocalStorage() ? true : false;
+      return DomainShared.checkIsPublicIdExist();
   }
 
 async pollLoginState() {
@@ -99,102 +78,51 @@ async pollLoginState() {
   DomainRead.activeController = this.pollController;
   const signal = this.pollController.signal;
 
-  const interval = 1800; 
-  const maxTries = 8;
-  const { domain, requestIdentifier, hmac } = this.state;
+  try {
+    const availableCredentials = await DomainShared.pollForCredentials(
+      this.state, 
+      signal, 
+      () => this.displayPoolProcess()
+    );
 
-  console.log(this.state);
-
-  for (let attempt = 0; attempt < maxTries; attempt++) {
-    // Check if polling was aborted before each attempt
     if (signal.aborted) {
-      console.warn('Polling was aborted, stopping loop');
       return;
     }
 
-    try {
-      const res = await fetch(this.URL_POLL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Extension-Auth': this.state['hmac']
-        },
-        body: JSON.stringify({
-          domain: this.state['domain'],
-          processId: this.state['processId'],
-          iv: requestIdentifier.iv,
-          type: 'extension'
-        }),
-        signal
-      });
-
-      const data = await res.json();
-      if (data.success) {   
-        const availableCredentials = [];
-        
-        // Handle new response format with domainList array
-        if (data.domainList && Array.isArray(data.domainList)) {
-          data.domainList.forEach((item, index) => {
-            if (data.process_check) { // Check process_check at root level
-              const creds = typeof item.credential === 'string'
-                ? JSON.parse(item.credential)
-                : item.credential;
-              availableCredentials.push({
-                key: index.toString(),
-                item: {
-                  credential: item.credential,
-                  description: item.description,
-                  targetId: item.targetId,
-                  publicId: data.publicId || null, // publicId might be at root level
-                  process_check: data.process_check
-                },
-                creds: creds
-              });
-            }
-          });
-        }
-
-        if (availableCredentials.length === 0) {
-          this.displayPoolProcess();
-        } else if (availableCredentials.length === 1) {
-          // Single credential - auto-fill directly
-          const { creds, item } = availableCredentials[0];
-          console.log('Single credential found:', creds);
-          this.autoFillCredentials(creds, item.publicId);
-          this.displayCredentials(creds, item.description, item.targetId);
-          // Stop polling completely
-          this.stopPolling();
-          return;
-        } else {
-          // Multiple credentials - show dropdown
-          this.displayCredentialsDropdown(availableCredentials);
-          // Stop polling completely
-          this.stopPolling();
-          return;
-        }
-      } else {
-        console.warn('Polling returned non-ok response:', res.status);
-      }
-    } catch (e) {
-      if (e.name === 'AbortError') {
-        console.warn('Polling aborted');
-        return;
-      }
-      console.error('Polling error:', e);
-    }
-
-    // Check again before waiting to avoid unnecessary delay
-    if (signal.aborted) {
-      console.warn('Polling was aborted during iteration, stopping');
+    if (!availableCredentials) {
+      // Timeout occurred
+      this.displayTimeout();
+      this.stopPolling();
       return;
     }
 
-    // Wait before next attempt
-    await new Promise(res => setTimeout(res, interval));
+    if (availableCredentials.length === 0) {
+      this.displayPoolProcess();
+    } else if (availableCredentials.length === 1) {
+      // Single credential - auto-fill directly
+      const { creds, item } = availableCredentials[0];
+      console.log('Single credential found:', creds);
+      this.autoFillCredentials(creds, item.publicId);
+      this.displayCredentials(creds, item.description, item.targetId);
+      // Stop polling completely
+      this.stopPolling();
+      return;
+    } else {
+      // Multiple credentials - show dropdown
+      this.displayCredentialsDropdown(availableCredentials);
+      // Stop polling completely
+      this.stopPolling();
+      return;
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.warn('Polling aborted');
+      return;
+    }
+    console.error('Polling error:', error);
+    this.displayTimeout();
+    this.stopPolling();
   }
-
-  this.displayTimeout();
-  this.stopPolling();
 }
 
   stopPolling() {

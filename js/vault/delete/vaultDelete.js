@@ -12,23 +12,39 @@ export class VaultDelete {
 
   constructor(container) {
     this.container = container;
+    this.state = {
+      requestIdentifier: null,
+      hmac: null,
+      processId: null
+    };
 
     this.URL_IDENTITY = `${BASE_API_URL}/api/credential-hub/vault/delete/qr-identity`;
     this.URL_POLL = `${BASE_API_URL}/api/credential-hub/vault/delete/state`;  
-    };
+  }
 
     async init() {
-            const vaultInstance = new VaultRead(this.container, 'dd');
-            await vaultInstance.init();
-            const apps = await vaultInstance.getApplicationList();
+        const vaultInstance = new VaultRead(this.container, 'dd');
+        await vaultInstance.init();
+        const apps = await vaultInstance.getApplicationList();
+        if (apps && apps.length > 0) {
             this.renderDropdown(apps);
+        } else {
+            this.displayNoCredentials();
+        }
     }
 
     renderDropdown(appList) {
+        this.container.innerHTML = '';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'Delete Vault Application';
+        title.style.color = '#fff';
+        title.style.marginBottom = '15px';
+
         const select = document.createElement('select');
         select.style.padding = '8px';
         select.style.borderRadius = '4px';
-        select.style.marginRight = '0px';
+        select.style.marginBottom = '10px';
         select.style.width = '100%';
 
         const placeholder = document.createElement('option');
@@ -45,11 +61,21 @@ export class VaultDelete {
             select.appendChild(option);
         });
 
+        const warning = document.createElement('p');
+        warning.textContent = 'This will permanently delete the selected application. This action cannot be undone.';
+        warning.style.color = '#ffc107';
+        warning.style.marginBottom = '15px';
+        warning.style.fontSize = '14px';
+
         const button = document.createElement('button');
-        button.textContent = 'Delete';
-        button.style.padding = '8px 12px';
+        button.textContent = 'Delete Selected Application';
+        button.style.padding = '10px 20px';
+        button.style.backgroundColor = '#dc3545';
+        button.style.color = 'white';
+        button.style.border = 'none';
         button.style.borderRadius = '4px';
         button.style.cursor = 'pointer';
+        button.style.width = '100%';
 
         button.addEventListener('click', () => {
             const selectedValue = select.value;
@@ -58,11 +84,11 @@ export class VaultDelete {
                 this.generateDeleteQrConfirmation(selectedValue);
             } else {
                 console.warn('No application selected');
+                alert('Please select an application to delete.');
             }
         });
 
-        this.container.innerHTML = '';
-        this.container.append(select, button);
+        this.container.append(title, select, warning, button);
     }
 
     async generateDeleteQrConfirmation(targetId){
@@ -90,6 +116,64 @@ export class VaultDelete {
             }   
     }
 
+    displayNoCredentials() {
+        this.container.innerHTML = '';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'No Applications Found';
+        title.style.color = '#fff';
+        title.style.marginBottom = '15px';
+
+        const msg = document.createElement('p');
+        msg.textContent = 'No applications found in vault.';
+        msg.style.color = '#ffc107';
+
+        const retryBtn = document.createElement('button');
+        retryBtn.textContent = 'Refresh';
+        retryBtn.style.padding = '8px 16px';
+        retryBtn.style.backgroundColor = '#007bff';
+        retryBtn.style.color = 'white';
+        retryBtn.style.border = 'none';
+        retryBtn.style.borderRadius = '4px';
+        retryBtn.style.cursor = 'pointer';
+        retryBtn.style.marginTop = '10px';
+
+        retryBtn.addEventListener('click', () => {
+            this.init();
+        });
+
+        this.container.append(title, msg, retryBtn);
+    }
+
+    displayError() {
+        this.container.innerHTML = '';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'Error Loading Applications';
+        title.style.color = '#fff';
+        title.style.marginBottom = '15px';
+
+        const msg = document.createElement('p');
+        msg.textContent = 'Failed to load applications from vault.';
+        msg.style.color = '#dc3545';
+
+        const retryBtn = document.createElement('button');
+        retryBtn.textContent = 'Retry';
+        retryBtn.style.padding = '8px 16px';
+        retryBtn.style.backgroundColor = '#007bff';
+        retryBtn.style.color = 'white';
+        retryBtn.style.border = 'none';
+        retryBtn.style.borderRadius = '4px';
+        retryBtn.style.cursor = 'pointer';
+        retryBtn.style.marginTop = '10px';
+
+        retryBtn.addEventListener('click', () => {
+            this.init();
+        });
+
+        this.container.append(title, msg, retryBtn);
+    }
+
   displayTimeout() {
     this.container.innerHTML = '';
 
@@ -101,7 +185,7 @@ export class VaultDelete {
 
     retryBtn.addEventListener('click', () => {
       this.container.innerHTML = '';
-      const caller = new DomainWrite(this.container);
+      const caller = new VaultDelete(this.container);
       caller.init();
     });
 
@@ -109,7 +193,44 @@ export class VaultDelete {
   }
 
   displaySuccess(){
-    this.container.innerHTML = `<p>Domain with its credentials: 'removed'</p>`;   
+    this.container.innerHTML = '';
+    
+    const successIcon = document.createElement('div');
+    successIcon.textContent = '✅';
+    successIcon.style.fontSize = '48px';
+    successIcon.style.textAlign = 'center';
+    successIcon.style.marginBottom = '15px';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Application Deleted Successfully';
+    title.style.color = '#28a745';
+    title.style.textAlign = 'center';
+    title.style.marginBottom = '15px';
+
+    const message = document.createElement('p');
+    message.textContent = 'The selected application has been permanently removed from your vault.';
+    message.style.color = '#fff';
+    message.style.textAlign = 'center';
+    message.style.marginBottom = '20px';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Close';
+    closeBtn.style.padding = '10px 20px';
+    closeBtn.style.backgroundColor = '#007bff';
+    closeBtn.style.color = 'white';
+    closeBtn.style.border = 'none';
+    closeBtn.style.borderRadius = '4px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.display = 'block';
+    closeBtn.style.margin = '0 auto';
+
+    closeBtn.addEventListener('click', () => {
+      this.container.innerHTML = '';
+      const caller = new VaultDelete(this.container);
+      caller.init();
+    });
+
+    this.container.append(successIcon, title, message, closeBtn);
   }
 
 }

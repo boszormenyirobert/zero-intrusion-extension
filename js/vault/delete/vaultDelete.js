@@ -6,6 +6,7 @@ import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
 import { pollRegistrationState } from './../../utils/pollRegistration.js';
 import { renderDropdown } from './renderApplicationDropdown.js';
 import { displayNoCredentials, displayError } from './renderVaultErrorFeedback.js';
+import { displayTimeout } from './renderVaultTimeout.js';
 
 export class VaultDelete {
 
@@ -61,29 +62,14 @@ export class VaultDelete {
             'removeProcessId'
         );        
             if(response === false){
-                this.displayTimeout();
+                displayTimeout(this.container, () => {
+                    const caller = new VaultDelete(this.container);
+                    caller.init();
+                });
             } else {
                 this.displaySuccess();
             }   
     }
-
-  displayTimeout() {
-    this.container.innerHTML = '';
-
-    const msg = document.createElement('p');
-    msg.textContent = 'Login expired. Please try again.';
-
-    const retryBtn = document.createElement('button');
-    retryBtn.textContent = 'Retry';
-
-    retryBtn.addEventListener('click', () => {
-      this.container.innerHTML = '';
-      const caller = new VaultDelete(this.container);
-      caller.init();
-    });
-
-    this.container.append(msg, retryBtn);
-  }
 
   displaySuccess(){
     this.container.innerHTML = '';

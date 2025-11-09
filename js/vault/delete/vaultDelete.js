@@ -25,15 +25,20 @@ export class VaultDelete {
   }
 
     async init() {
-        const vaultInstance = new VaultRead(this.container, 'dd');
-        await vaultInstance.init();
-        const apps = await vaultInstance.getApplicationList();
-        if (apps && apps.length > 0) {
-            renderDropdown(this.container, apps, (targetId) => {
-                this.generateDeleteQrConfirmation(targetId);
-            });
-        } else {
-            displayNoCredentials(this.container, () => this.init());
+        try {
+            const vaultInstance = new VaultRead(this.container, 'dd');
+            await vaultInstance.init();
+            const apps = await vaultInstance.getApplicationList();
+            if (apps && apps.length > 0) {
+                renderDropdown(this.container, apps, (targetId) => {
+                    this.generateDeleteQrConfirmation(targetId);
+                });
+            } else {
+                displayNoCredentials(this.container, () => this.init());
+            }
+        } catch (error) {
+            console.error('Error initializing vault delete:', error);
+            displayError(this.container, () => this.init());
         }
     }
 

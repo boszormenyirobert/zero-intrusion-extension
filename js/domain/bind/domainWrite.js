@@ -5,6 +5,7 @@ import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
 import { pollRegistrationState } from './../../utils/pollRegistration.js';
 import { renderInputFieldsDomain } from '../../rendering/renderInputFieldsDomain.js';
 import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
+import { renderTimeout, renderSuccess } from './renderDomainWriteFeedback.js';
 
 export class DomainWrite {
   static activeController = null;
@@ -53,9 +54,12 @@ export class DomainWrite {
     )
 
     if(response === false){
-        this.displayTimeout();
+        renderTimeout(this.container, () => {
+            this.container.innerHTML = '';
+            this.startRegistration();
+        });
     } else {
-        this.displaySuccess();
+        renderSuccess(this.container);
     }
   }
 
@@ -98,25 +102,4 @@ export class DomainWrite {
     });
   }
 
-
-   displayTimeout() {
-      this.container.innerHTML = '';
-
-      const feedback = document.createElement('div');
-      feedback.innerHTML = "Handy verification is missing.";
-      
-      const retryBtn = document.createElement('button');
-      retryBtn.textContent = 'Show my QR code';
-
-      retryBtn.addEventListener('click', () => {
-        this.container.innerHTML = '';
-        this.startRegistration();
-      });
-
-      this.container.append(feedback, retryBtn);
-  }  
-
-  displaySuccess(){
-    this.container.innerHTML = `<p>Registration process: 'success'</p>`;   
-  }    
 }

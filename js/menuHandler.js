@@ -1,6 +1,7 @@
 import { getHomeHTML } from './home/getHomeHTML.js';
 import { DomainRead }  from './domain/login/domainRead.js';
 import { DomainWrite } from './domain/bind/domainWrite.js';
+import { DomainEdit }  from './domain/edit/domainEdit.js';
 import { DomainDelete } from './domain/delete/domainDelete.js';
 import { VaultRead } from './vault/login/vaultRead.js';
 import { VaultWrite } from './vault/bind/vaultWrite.js';
@@ -61,12 +62,22 @@ export class MenuHandler {
     domainWrite.innerHTML = `
       <div style="display:flex; align-items:flex-start; justify-content:space-between; width:100%;">
         <div style="display:flex; flex-direction:column; align-items:flex-start;">
-          <span>Add/Update</span>
-          <span style="font-size: 0.85em; color: #d1cece;">Rewrite or register this website credentials</span>
+          <span>New credential</span>
+          <span style="font-size: 0.85em; color: #d1cece;">Register credential to this website</span>
         </div>
         <div class="svg_write"></div>
       </div>
     `;
+    const domainEdit = document.createElement('button');
+    domainEdit.innerHTML = `
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; width:100%;">
+        <div style="display:flex; flex-direction:column; align-items:flex-start;">
+          <span>Edit credential</span>
+          <span style="font-size: 0.85em; color: #d1cece;">Adjust credential to this website</span>
+        </div>
+        <div class="svg_write"></div>
+      </div>
+    `;    
     const domainDelete = document.createElement('button');
     domainDelete.innerHTML = `
       <div style="display:flex; align-items:flex-start; justify-content:space-between; width:100%;">
@@ -90,13 +101,19 @@ export class MenuHandler {
       caller.init();
     };
 
+    domainEdit.onclick = () => {
+      this.clearView();
+      const caller = new DomainEdit(this.view);
+      caller.init();
+    };    
+
     domainDelete.onclick = () => {
       this.clearView();
       const caller =new DomainDelete(this.view);
       caller.init();
     };   
 
-    this.view.append(domainRead, domainWrite, domainDelete);
+    this.view.append(domainRead, domainWrite, domainEdit,domainDelete);
   }
 
   showVault() {

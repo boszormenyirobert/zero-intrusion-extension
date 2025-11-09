@@ -5,6 +5,7 @@ export async function pollRegistrationState(data, path, container, process) {
   const interval = 1800; 
   const maxTries = 8;
   let tries = 0;
+  let pollingDisplayed = false; // Track if polling process was already displayed
 
   return new Promise((resolve) => {
     const poller = async () => {
@@ -32,8 +33,12 @@ export async function pollRegistrationState(data, path, container, process) {
             console.log('Success condition met, resolving true');
             return resolve(true);
           } else {
-            console.log('Displaying polling process...');
-            renderPollingProcess(container);
+            // Only show polling process once, not on every iteration
+            if (!pollingDisplayed) {
+              console.log('Displaying polling process...');
+              renderPollingProcess(container);
+              pollingDisplayed = true;
+            }
           }
         }
       } catch (e) {

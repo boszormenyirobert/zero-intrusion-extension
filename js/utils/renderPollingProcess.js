@@ -4,7 +4,7 @@ export function renderPollingProcess(container) {
     if (!feedback) {
       // Create container for countdown and text
       feedback = document.createElement('div');
-      feedback.id = 'vault-polling-feedback';
+      feedback.id = 'domain-polling-feedback';
       feedback.style.textAlign = 'center';
       feedback.style.marginTop = '20px';
       feedback.style.border = 'none';

@@ -45,11 +45,14 @@ export class DomainDelete {
         'Loading Domain Credentials...'
       );
 
-      // Poll for credentials using shared logic
+      // Show polling feedback once before starting polling
+      renderPollingProcess(this.container);
+
+      // Poll for credentials using shared logic - no callback to avoid duplicates
       const credentials = await DomainShared.pollForCredentials(
         this.state,
         null, // no abort signal
-        () => renderPollingProcess(this.container)
+        null  // no progress callback to prevent duplicate counters
       );
       
       if (credentials && credentials.length > 0) {

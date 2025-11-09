@@ -68,10 +68,7 @@ export class VaultDelete {
                     caller.init();
                 });
             } else {
-                displaySuccess(this.container, () => {
-                    const caller = new VaultDelete(this.container);
-                    caller.init();
-                });
+                displaySuccess(this.container);
             }   
     }
 

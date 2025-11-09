@@ -199,3 +199,21 @@ display: inline-block; width: 28%; text-align: right;
   margin: 30px auto; /* centers horizontally if container is block */
   user-select: none;
 }
+
+.countdown-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #007bff;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 auto 10px auto;
+}

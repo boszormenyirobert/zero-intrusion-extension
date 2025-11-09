@@ -18,19 +18,7 @@ export function renderEmptyVault(container, mode, onRefreshCallback) {
     msg.style.color = '#ffc107';
     msg.style.marginBottom = '15px';
 
-    const retryBtn = document.createElement('button');
-    retryBtn.textContent = 'Refresh';
-    retryBtn.style.padding = '8px 16px';
-    retryBtn.style.backgroundColor = '#007bff';
-    retryBtn.style.color = 'white';
-    retryBtn.style.border = 'none';
-    retryBtn.style.borderRadius = '4px';
-    retryBtn.style.cursor = 'pointer';
-    retryBtn.style.marginRight = '10px';
-
-    retryBtn.addEventListener('click', onRefreshCallback);
-
-    container.append(title, msg, retryBtn);
+    container.append(title, msg);
 }
 
 /**
@@ -41,20 +29,8 @@ export function renderTimeout(container, mode, onRetryCallback) {
 
     const feedback = document.createElement('div');
     feedback.innerHTML = renderPollingProcess('vault_missing');
-    
-    const retryBtn = document.createElement('button');
-    retryBtn.textContent = 'Show my QR code';
-    retryBtn.style.padding = '8px 16px';
-    retryBtn.style.backgroundColor = '#007bff';
-    retryBtn.style.color = 'white';
-    retryBtn.style.border = 'none';
-    retryBtn.style.borderRadius = '4px';
-    retryBtn.style.cursor = 'pointer';
-    retryBtn.style.marginTop = '10px';
 
-    retryBtn.addEventListener('click', onRetryCallback);
-
-    container.append(feedback, retryBtn);
+    container.append(feedback);
 }
 
 // Import renderPollingProcess for the timeout function

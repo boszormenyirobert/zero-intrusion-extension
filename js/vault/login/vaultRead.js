@@ -124,6 +124,13 @@ async pollGetApplicationList(requestIdentifier) {
           if(this.mode === 'list'){
             renderApplications(this.container, data.applicationList);
           }
+          
+          // Clear any countdown timers
+          const feedback = this.container.querySelector('.polling-feedback');
+          if (feedback && feedback.countdownInterval) {
+            clearInterval(feedback.countdownInterval);
+          }
+          
           this.state.applicationList = data.applicationList;
           // Stop polling completely
           this.stopPolling();

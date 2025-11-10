@@ -233,8 +233,7 @@ export class DomainEdit {
         targetId: updatedCredential.targetId
       });
 
-      console.log('Update payload:', this.payloadInputs);
-      
+     
       // Send to server like domainWrite
       await this.startUpdateRegistration();
       

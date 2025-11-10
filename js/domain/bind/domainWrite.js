@@ -87,7 +87,6 @@ export class DomainWrite {
     const username = this.container.querySelector('#username').value.trim();
     const password = this.container.querySelector('#password').value.trim();
     const description = this.container.querySelector('#description').value.trim();
-    const isUpdate = this.container.querySelector('input[type="checkbox"]').checked;
     const storage = handleLocalStorage() ?? "";
 
     return JSON.stringify({

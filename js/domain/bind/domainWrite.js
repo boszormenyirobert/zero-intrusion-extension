@@ -97,7 +97,7 @@ export class DomainWrite {
       description: description,
       type: 'registration-domain',
       source: 'extension',
-      isNew: isUpdate ? 'update' : 'new',
+      isNew: 'new',
       userPublicId: storage
     });
   }

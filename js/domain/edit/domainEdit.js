@@ -2,6 +2,9 @@ import { DomainShared } from '../shared/domainShared.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
 import { getCurrentTabHost } from '../../utils/tabChanges.js';
+import { BASE_API_URL } from '../../config.js';
+import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
+import { pollRegistrationState } from '../../utils/pollRegistration.js';
 
 export class DomainEdit {
   
@@ -13,6 +16,11 @@ export class DomainEdit {
       domain: null,
       processId: null
     };
+    
+    // URLs same as domainWrite
+    this.URL_IDENTITY = `${BASE_API_URL}/api/credential-hub/shared/registration/qr-identity`;
+    this.URL_POLL = `${BASE_API_URL}/api/credential-hub/shared/registration/state`;
+    this.payloadInputs = null; // Store payload like domainWrite
   }
 
   async init() {
@@ -212,7 +220,8 @@ export class DomainEdit {
       const domain = await getCurrentTabHost();
       const storage = handleLocalStorage() ?? "";
 
-      const payload = JSON.stringify({
+      // Create payload like domainWrite
+      this.payloadInputs = JSON.stringify({
         domain,
         userName: updatedCredential.userName,
         userPassword: updatedCredential.userPassword,
@@ -224,14 +233,65 @@ export class DomainEdit {
         targetId: updatedCredential.targetId
       });
 
-      console.log('Update payload:', payload);
+      console.log('Update payload:', this.payloadInputs);
       
-      // Here you would normally send this to the API
-      // For now, just log it as requested
+      // Send to server like domainWrite
+      await this.startUpdateRegistration();
       
     } catch (error) {
       console.error('Error saving credential update:', error);
     }
+  }
+
+  async startUpdateRegistration() {
+    try {
+      // Get QR code from server
+      const requestIdentifier = await fetchIdentifier(this.URL_IDENTITY, this.payloadInputs);
+
+      // Show QR code
+      qrRenderer(requestIdentifier['qrCode'], this.container);
+      
+      // Poll for registration completion
+      let response = await pollRegistrationState(
+        requestIdentifier, 
+        this.URL_POLL, 
+        this.container, 
+        'registrationProcessId'
+      );
+
+      if (response === false) {
+        // Timeout occurred
+        console.log('Update registration timed out');
+        this.renderUpdateTimeout();
+      } else {
+        // Success
+        console.log('Update registration successful');
+        this.renderUpdateSuccess();
+      }
+      
+    } catch (error) {
+      console.error('Error during update registration:', error);
+    }
+  }
+
+  renderUpdateTimeout() {
+    this.container.innerHTML = `
+      <h3 style="color: #fff;">Update Timeout</h3>
+      <p style="color: #ffc107;">The update operation timed out. Please try again.</p>
+      <button onclick="location.reload()" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Try Again
+      </button>
+    `;
+  }
+
+  renderUpdateSuccess() {
+    this.container.innerHTML = `
+      <h3 style="color: #fff;">Update Successful</h3>
+      <p style="color: #28a745;">Your credential has been updated successfully!</p>
+      <button onclick="location.reload()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Done
+      </button>
+    `;
   }
 
 }

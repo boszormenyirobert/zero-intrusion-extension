@@ -7,6 +7,7 @@ import { VaultRead } from './vault/login/vaultRead.js';
 import { VaultWrite } from './vault/bind/vaultWrite.js';
 import { VaultEdit } from './vault/edit/vaultEdit.js';
 import { VaultDelete } from './vault/delete/vaultDelete.js';
+import { Help } from './help/help.js';
 
 export class MenuHandler {
   constructor(view) {
@@ -42,8 +43,9 @@ export class MenuHandler {
   }
 
   showHelp() {
-    this.clearView();
-    this.view.textContent = 'Help content';
+      this.clearView();
+      const caller = new Help(this.view);
+      caller.init();
   }
 
   showWeb() {

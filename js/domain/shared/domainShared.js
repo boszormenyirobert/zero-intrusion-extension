@@ -2,7 +2,7 @@ import { BASE_API_URL } from '../../config.js';
 import { qrRenderer } from '../../utils/renderQR.js';
 import { getCurrentTabHost } from '../../utils/tabChanges.js';
 import { fetchIdentifier } from '../../utils/fetchIdentifier.js';
-import { handleLocalStorage } from '../../utils/handleLocalStorage.js';
+import { handleLocalStorage, setPublicId } from '../../utils/handleLocalStorage.js';
 
 /**
  * Shared utilities for domain credential operations

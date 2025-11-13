@@ -36,7 +36,7 @@ export class Help {
             If you trust this computer and want to enable one-touch confirmation, enter your email and check the box below.
           </p>
 
-          <input id="userEmail" type="email" placeholder="Your email address" style="
+          <input id="userEmail_1" type="email" placeholder="Your email address" style="
             width: 100%;
             padding: 8px 10px;
             margin-bottom: 12px;
@@ -48,18 +48,55 @@ export class Help {
             outline: none;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
           ">
+          <input id="userEmail_2" type="email" placeholder="Your email address" style="
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0d6efd;
+            font-size: 0.95em;
+            outline: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          ">
+          <input id="userEmail_3" type="email" placeholder="Your email address" style="
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0d6efd;
+            font-size: 0.95em;
+            outline: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          ">
+          <input id="userEmail_4" type="email" placeholder="Your email address" style="
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0d6efd;
+            font-size: 0.95em;
+            outline: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          ">
+          <input id="userEmail_5" type="email" placeholder="Your email address" style="
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #0d6efd;
+            font-size: 0.95em;
+            outline: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          ">                              
 
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-            <input id="secureDeviceCheckbox" type="checkbox" style="
-              width: 18px;
-              height: 18px;
-              accent-color: #ffffff;
-              background: #ffffff;
-              border-radius: 4px;
-              cursor: pointer;
-            ">
-            <span>Trust this computer</span>
-          </label>
 
           <button id="confirmSecureDevice" style="
             margin-top: 12px;
@@ -79,17 +116,32 @@ export class Help {
         <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 12px 0 16px;">
         <p style="margin: 0;">
           <strong>Activation:</strong><br>
-          The 'One Touch' feature availabe after the login process on trusted devices only.
+          The 'One Touch' feature availabe after the first qr-login process this trusted devices only.
         </p>
       </div>
     `;
+    //Prefill the emails if available
+    const prefill = (() => {
+      const oneTouchUsers = JSON.parse(localStorage.getItem('oneTouchUsers')) || [];
+      for (let i = 0; i < oneTouchUsers.length; i++) {
+        const emailInput = container.querySelector(`#userEmail_${i + 1}`);
+        if (emailInput) {
+          emailInput.value = oneTouchUsers[i].email;
+          console.log('Prefilled email input:', oneTouchUsers[i].email);
+        }
+      }
+    })
 
     const root = container.firstElementChild;
 
     // Safe listeners on real DOM
     const confirmBtn = root.querySelector('#confirmSecureDevice');
     const checkbox = root.querySelector('#secureDeviceCheckbox');
-    const emailInput = root.querySelector('#userEmail');
+    const emailInput_1 = root.querySelector('#userEmail_1');
+    const emailInput_2 = root.querySelector('#userEmail_2');
+    const emailInput_3 = root.querySelector('#userEmail_3');
+    const emailInput_4 = root.querySelector('#userEmail_4');
+    const emailInput_5 = root.querySelector('#userEmail_5');
 
     confirmBtn.addEventListener('mouseenter', () => {
       confirmBtn.style.background = '#e9ecef';
@@ -98,23 +150,20 @@ export class Help {
       confirmBtn.style.background = '#ffffff';
     });
 
-    confirmBtn.addEventListener('click', () => {
-      const email = emailInput.value.trim();
-
-      if (!checkbox.checked) {
-        alert('Please check "Trust this computer" before confirming.');
-        return;
-      }
-
-      if (!email) {
-        alert('Please enter your email address.');
-        return;
-      }
-
-      // ✅ Works now — bound to real element
-      setSecureDevice(email);
+    confirmBtn.addEventListener('click', async () => {
+      const emails = [
+         emailInput_1.value.trim(),
+         emailInput_2.value.trim(),
+         emailInput_3.value.trim(),
+         emailInput_4.value.trim(),
+         emailInput_5.value.trim()
+      ];
+      
+      setSecureDevice(emails);
+      sessionStorage.setItem('changes', 'true');
+      if (typeof this.onConfirm === 'function') await this.onConfirm();
     });
-
+    prefill();
     return root; // return the DOM node, not a string
   }
 }

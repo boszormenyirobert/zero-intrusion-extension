@@ -1,3 +1,5 @@
+/* global chrome */
+
 import { getHomeHTML } from './home/getHomeHTML.js';
 import { DomainRead }  from './domain/login/domainRead.js';
 import { DomainWrite } from './domain/bind/domainWrite.js';
@@ -12,15 +14,19 @@ import { Help } from './help/help.js';
 export class MenuHandler {
   constructor(view) {
     this.view = view;
+    this.showHome();    
   }
+  selectedUser = false;
 
-  init() {
-    document.getElementById('homeBtn').onclick = () => this.showHome();
-    document.getElementById('vaultBtn').onclick = () => this.showVault();
-    document.getElementById('helpBtn').onclick = () => this.showHelp();
-    document.getElementById('webBtn').onclick = () => this.showWeb();
+  init() {   
+    if(this.selectedUser){
+      document.getElementById('homeBtn').onclick = () => this.showHome();
+      document.getElementById('vaultBtn').onclick = () => this.showVault();
+      document.getElementById('helpBtn').onclick = () => this.showHelp();
+      document.getElementById('webBtn').onclick = () => this.showWeb();
 
-    this.showHome();
+      this.showCurrentUser();
+    }     
   }
 
   clearView() {
@@ -37,19 +43,39 @@ export class MenuHandler {
     }
   }
 
-  showHome() {
+  async showHome() {
     this.clearView();
-    this.view.innerHTML = getHomeHTML();
+    const home = await getHomeHTML((selectedUser) => {
+      if (selectedUser) {
+        this.selectedUser = selectedUser;
+        chrome.storage.session.set({ currentUser: selectedUser });
+        this.init();        
+        //this.showCurrentUser();
+      }
+    });
+    
+    this.view.appendChild(home);      
+    chrome.storage.session.get('currentUser').then(({ currentUser }) => {
+      if (currentUser) this.showCurrentUser();
+    });     
   }
 
-  showHelp() {
+  async showHelp() {
       this.clearView();
+      this.showCurrentUser();
+
       const caller = new Help(this.view);
-      caller.init();
+      caller.onConfirm = async () =>{ 
+        this.selectedUser =false;
+        chrome.storage.session.remove('currentUser');
+        await this.showHome();        
+      };      
+      await caller.init();
   }
 
   showWeb() {
     this.clearView();
+    this.showCurrentUser();
     const domainRead = document.createElement('button');
     domainRead.innerHTML = `
       <div style="display:flex; align-items:flex-start; justify-content:space-between; width:100%;">
@@ -115,11 +141,12 @@ export class MenuHandler {
       caller.init();
     };   
 
-    this.view.append(domainRead, domainWrite, domainEdit,domainDelete);
+    this.view.append(domainRead, domainWrite, domainEdit,domainDelete);    
   }
 
   showVault() {
     this.clearView();
+    this.showCurrentUser();
 
     const vaultRead = document.createElement('button');
     vaultRead.innerHTML = `
@@ -186,4 +213,22 @@ export class MenuHandler {
 
     this.view.append(vaultRead, vaultWrite, vaultEdit, vaultDelete);
   }  
+
+showCurrentUser() {
+  if (this.view.querySelector('.current-user-container')) return;
+  
+  const container = document.createElement("div");
+  container.className = 'current-user-container';
+
+  chrome.storage.session.get('currentUser').then(({ currentUser }) => {
+    if (currentUser?.email) {
+      const p = document.createElement("p");
+      p.textContent = `Welcome back, ${currentUser.email}!`;
+      container.appendChild(p);
+      this.view.prepend(container);
+    }
+  });
+}
+
+
 }

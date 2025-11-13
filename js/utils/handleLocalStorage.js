@@ -1,6 +1,6 @@
-  import { SECURE_DEVICE } from './../config.js';
+import { SECURE_DEVICE } from './../config.js';
 
-  export function handleLocalStorage(publicId = ""){
+  export function Original_handleLocalStorage(publicId = ""){
     if ("userPublicId" in localStorage) {
       console.log("secure device found");
       return localStorage.getItem("userPublicId");
@@ -14,37 +14,24 @@
       return "";
   }
 
-  export function  setSecureDevice(email, userPublicId="") {
-  if (!email) {
-    console.error("❌ Email is required");
-    return;
-  }
-
-  // Load existing users from localStorage
-  const oneTouchUsers = JSON.parse(localStorage.getItem('oneTouchUsers')) || [];
-
-  // Check if email already exists
-  let existingUser = oneTouchUsers.find(user => user.email === email);
-
-  // If not found, add a new one
-  if (!existingUser) {
-    existingUser = {
+    export function handleLocalStorage(publicId = "") {
+      chrome.storage.session.get("currentUser", res => res.currentUser ? res.currentUser.userPublicId : "");
+    }
+    
+  export function setSecureDevice(emails, userPublicId = "") {
+    // Ensure emails is always an array
+    if (!Array.isArray(emails)) emails = [];
+    // Sanitize emails array
+    const filteredEmails = emails.filter(email => email !== "");
+    // Overwrite the user list with the current input values
+    const newUsers = filteredEmails.map(email => ({
       email,
       userPublicId: ''
-    };
-    oneTouchUsers.push(existingUser);
-    console.log('🆕 Added new secure device entry for:', email);
-  } else {
-    existingUser.userPublicId = userPublicId;
-    console.log('🔄 Updated existing secure device entry for:', email);
+    }));
+    localStorage.setItem('oneTouchUsers', JSON.stringify(newUsers));
+    // Return the new user list
+    return newUsers;
   }
-
-  // Save updated list back to localStorage
-  localStorage.setItem('oneTouchUsers', JSON.stringify(oneTouchUsers));
-
-  // Return the secure device object
-  return existingUser;
-}
 
 export function  setPublicId(email, userPublicId="") {
   if (!email) {
@@ -73,4 +60,10 @@ export function  setPublicId(email, userPublicId="") {
 
   // Return the secure device object
   return existingUser;
+}
+
+function removeEmptyEmailFromOneTouchUsers() {
+  const oneTouchUsers = JSON.parse(localStorage.getItem('oneTouchUsers')) || [];
+  const filteredUsers = oneTouchUsers.filter(user => user.email !== "");
+  localStorage.setItem('oneTouchUsers', JSON.stringify(filteredUsers));
 }

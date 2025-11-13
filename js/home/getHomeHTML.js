@@ -14,24 +14,39 @@ export async function getHomeHTML(onUserSelect) {
   `;
 
   chrome.storage.session.get("currentUser").then(({ currentUser }) => {
-    console.log("Current user from storage:", currentUser);
-    console.log("Users array:", users);
-
     if (users.length > 1 && !currentUser) {
       const dropdownDiv = document.createElement("div");
       dropdownDiv.id = "user-select-container";
-      dropdownDiv.style.background = "#222";
-      dropdownDiv.style.padding = "15px";
-      dropdownDiv.style.borderRadius = "8px";
-      dropdownDiv.style.marginBottom = "20px";
-      dropdownDiv.style.textAlign = "center";
 
-      const label = document.createElement("label");
-      label.textContent = "Válassz felhasználót:";
-      label.style.display = "block";
-      label.style.marginBottom = "10px";
-      label.style.color = "#fff";
-      dropdownDiv.appendChild(label);
+      dropdownDiv.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        border-radius: 12px;
+        backdrop-filter: blur(6px);
+        margin-bottom: 20px;
+        color: white;
+      `;
+
+        // Label + ikon container
+        const labelContainer = document.createElement("div");
+        labelContainer.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 6px;
+        `;
+        // Label
+        const label = document.createElement("label");
+        label.textContent = "Select your account";
+        label.style.cssText = `
+          font-weight: 600;
+          font-size: 1rem;
+          color: white;
+        `;
+
+        labelContainer.append(label);
+        dropdownDiv.appendChild(labelContainer);
 
       const select = document.createElement("select");
       select.id = "userSelect";
@@ -42,7 +57,7 @@ export async function getHomeHTML(onUserSelect) {
 
       const defaultOpt = document.createElement("option");
       defaultOpt.value = "";
-      defaultOpt.textContent = "— válassz —";
+      defaultOpt.textContent = "— select —";
       select.appendChild(defaultOpt);
 
       users.forEach((u) => {

@@ -50,7 +50,6 @@ export class MenuHandler {
         this.selectedUser = selectedUser;
         chrome.storage.session.set({ currentUser: selectedUser });
         this.init();        
-        //this.showCurrentUser();
       }
     });
     
@@ -222,41 +221,40 @@ showCurrentUser() {
 
   chrome.storage.session.get('currentUser').then(({ currentUser }) => {
     if (currentUser?.email) {
-const container = document.createElement("div");
-container.className = "current-user-container";
-container.innerHTML = `
-  <div style="
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:10px 14px;
-    background:rgba(255,255,255,0.08);
-    border-radius:4px;
-    backdrop-filter:blur(6px);
-    color:white;
-    font-size:0.95rem;
-    margin-bottom:15px;
-  ">
-    <div style="
-      width:32px;
-      height:32px;
-      border-radius:50%;
-      background:#ffffff22;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:18px;
-    ">
-      👤
-    </div>
-    <div style="display:flex; flex-direction:column;">
-      <span style="opacity:0.7; font-size:0.8rem;">Logged in as</span>
-      <span style="font-weight:600;">${currentUser.email}</span>
-    </div>
-  </div>
-`;
-this.view.prepend(container);
-
+      const container = document.createElement("div");
+      container.className = "current-user-container";
+      container.innerHTML = `
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+          padding:10px 14px;
+          background:rgba(255,255,255,0.08);
+          border-radius:4px;
+          backdrop-filter:blur(6px);
+          color:white;
+          font-size:0.95rem;
+          margin-bottom:15px;
+        ">
+          <div style="
+            width:32px;
+            height:32px;
+            border-radius:50%;
+            background:#ffffff22;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:18px;
+          ">
+            👤
+          </div>
+          <div style="display:flex; flex-direction:column;">
+            <span style="opacity:0.7; font-size:0.8rem;">Logged in as</span>
+            <span style="font-weight:600;">${currentUser.email}</span>
+          </div>
+        </div>
+      `;
+      this.view.prepend(container);
     }
   });
 }

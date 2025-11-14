@@ -23,7 +23,7 @@ export class DomainShared {
 
     if(storage){
         console.log(handleLocalStorage());
-        payload = { domain, userPublicId: handleLocalStorage() }
+        payload = { domain, userPublicId: await handleLocalStorage() }
     } else {
         payload = { domain, userPublicId: "" };
     }
@@ -84,7 +84,14 @@ export class DomainShared {
         });
 
         const data = await res.json();
-        console.log('Polling response:', data);
+        
+        const oneTouchUsers = JSON.parse(localStorage.getItem('oneTouchUsers')) || [];
+        for (let i = 0; i < oneTouchUsers.length; i++) {
+          if (data?.email && oneTouchUsers[i].email === data.email) {
+          oneTouchUsers[i].userPublicId = data.publicId;        
+          }
+        }
+        localStorage.setItem('oneTouchUsers', JSON.stringify(oneTouchUsers));
         
         if (data.success) {   
           const availableCredentials = [];

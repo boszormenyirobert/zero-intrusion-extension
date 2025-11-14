@@ -14,9 +14,13 @@ import { SECURE_DEVICE } from './../config.js';
       return "";
   }
 
-    export function handleLocalStorage(publicId = "") {
-      chrome.storage.session.get("currentUser", res => res.currentUser ? res.currentUser.userPublicId : "");
-    }
+  export async function handleLocalStorage(publicId = "") {
+    return new Promise((resolve) => {
+      chrome.storage.session.get("currentUser", res => {
+        resolve(res.currentUser ? res.currentUser.userPublicId : "");
+      });
+    });
+  }
     
   export function setSecureDevice(emails, userPublicId = "") {
     // Ensure emails is always an array

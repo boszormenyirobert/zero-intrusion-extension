@@ -69,7 +69,7 @@ export class DomainDelete {
   }
 
   async generateDeleteQrConfirmation(selectedCredential) {
-    const storage = handleLocalStorage();
+    const storage = await handleLocalStorage();
     let payload = { 
       type: 'delete-domain', 
       source: 'extension',

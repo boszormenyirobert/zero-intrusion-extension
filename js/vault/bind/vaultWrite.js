@@ -78,8 +78,8 @@ export class VaultWrite {
   }
 
   async getVaultRegistrationPayload() {
-    const storage = handleLocalStorage();
-
+    const storage = await handleLocalStorage();
+    
     return JSON.stringify({
       application: document.getElementById('application_name').value.trim(),
       description: document.getElementById('application_description').value.trim(),

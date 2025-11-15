@@ -50,7 +50,7 @@ export class VaultRead {
   }
 
   async renderApplicationList() {
-    const storage = handleLocalStorage();
+    const storage = await handleLocalStorage();
     let payload = { type: 'applications', source: 'extension' };
     
     // Only add userPublicId if it exists and is not empty

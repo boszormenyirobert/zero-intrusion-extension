@@ -33,8 +33,8 @@ export class DomainEdit {
       this.state = await DomainShared.initializeDomainRequest();
 
       // Check if user has publicId and fill it if available
-      const userPublicId = handleLocalStorage();
-      console.log('User publicId from local storage:', userPublicId);
+      const storage = await handleLocalStorage();
+      console.log('User publicId from local storage:', storage);
 
       // Display QR code using shared utility
       DomainShared.displayQRCode(
@@ -218,7 +218,7 @@ export class DomainEdit {
   async saveCredentialUpdate(updatedCredential) {
     try {
       const domain = await getCurrentTabHost();
-      const storage = handleLocalStorage() ?? "";
+      const storage = await handleLocalStorage();
 
       // Create payload like domainWrite
       this.payloadInputs = JSON.stringify({

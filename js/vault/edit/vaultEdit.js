@@ -127,7 +127,7 @@ renderDropdown(appList) {
 
 
     async generateEditQrConfirmation(){
-        const storage = handleLocalStorage();
+        const storage = await handleLocalStorage();
 
         const payload = JSON.stringify({ 
             type: 'update-applications', 

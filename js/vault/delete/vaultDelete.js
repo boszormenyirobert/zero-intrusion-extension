@@ -45,7 +45,7 @@ export class VaultDelete {
     }
 
     async generateDeleteQrConfirmation(targetId){
-        const storage = handleLocalStorage();
+        const storage = await handleLocalStorage();
 
         const payload = JSON.stringify({ 
           type: 'delete-applications', 

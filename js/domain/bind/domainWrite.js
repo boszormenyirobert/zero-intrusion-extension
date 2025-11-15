@@ -87,7 +87,7 @@ export class DomainWrite {
     const username = this.container.querySelector('#username').value.trim();
     const password = this.container.querySelector('#password').value.trim();
     const description = this.container.querySelector('#description').value.trim();
-    const storage = handleLocalStorage() ?? "";
+    const storage = await handleLocalStorage();
 
     return JSON.stringify({
       domain,

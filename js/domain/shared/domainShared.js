@@ -18,7 +18,7 @@ export class DomainShared {
    */
   static async initializeDomainRequest() {
     const domain = await getCurrentTabHost();
-    const storage = handleLocalStorage();
+    const storage = await handleLocalStorage();
     let payload = {};
 
     if(storage){
@@ -85,11 +85,11 @@ export class DomainShared {
 
         const data = await res.json();
         
-        const oneTouchUsers = JSON.parse(localStorage.getItem('oneTouchUsers')) || [];
+        const oneTouchUsers = JSON.parse(localStorage.getItem('oneTouchUsers')) || "";
         for (let i = 0; i < oneTouchUsers.length; i++) {
           if (data?.email && oneTouchUsers[i].email === data.email) {
           oneTouchUsers[i].userPublicId = data.publicId;        
-          }
+          } 
         }
         localStorage.setItem('oneTouchUsers', JSON.stringify(oneTouchUsers));
         

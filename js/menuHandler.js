@@ -18,7 +18,15 @@ export class MenuHandler {
   }
   selectedUser = false;
 
-  init() {   
+  async init() {   
+    if(!this.selectedUser) {
+      const { currentUser } = await chrome.storage.session.get('currentUser');
+      if (currentUser) {
+        console.log('MenuHandler: currentUser found in session storage:', currentUser);
+        this.selectedUser = true;
+      }
+    }
+
     if(this.selectedUser){
       document.getElementById('homeBtn').onclick = () => this.showHome();
       document.getElementById('vaultBtn').onclick = () => this.showVault();
@@ -45,11 +53,11 @@ export class MenuHandler {
 
   async showHome() {
     this.clearView();
-    const home = await getHomeHTML((selectedUser) => {
+    const home = await getHomeHTML(async (selectedUser) => {
       if (selectedUser) {
         this.selectedUser = selectedUser;
         chrome.storage.session.set({ currentUser: selectedUser });
-        this.init();        
+        await this.init();        
       }
     });
     
